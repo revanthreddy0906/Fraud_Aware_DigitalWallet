@@ -339,11 +339,37 @@ export default function TransactionsPage() {
 
                         <div className="text-center mt-8">
                             <AlertTriangle className="w-16 h-16 text-danger mx-auto mb-4" />
-                            <h3 className="text-2xl font-bold text-white mb-2">High-Risk Transaction</h3>
-                            <p className="text-dark-400 mb-6">
-                                This transaction has been flagged. Please confirm within {countdown} seconds or
-                                your wallet will be temporarily frozen.
-                            </p>
+                            <h3 className="text-2xl font-bold text-white mb-2">
+                                {fraudAnalysis?.velocity_warning ? '⚡ Velocity Limit Warning' :
+                                    fraudAnalysis?.high_score_warning ? '🚨 High Risk Warning' :
+                                        'High-Risk Transaction'}
+                            </h3>
+                            {fraudAnalysis?.velocity_warning ? (
+                                <div className="text-dark-400 mb-6">
+                                    <p className="text-warning font-medium mb-2">
+                                        You&apos;ve made {fraudAnalysis.velocity_count} transactions in 10 minutes (limit: {fraudAnalysis.max_allowed})
+                                    </p>
+                                    <p>
+                                        Confirming this transaction will <span className="text-danger font-semibold">freeze your wallet for {fraudAnalysis.freeze_minutes} minutes</span>.
+                                    </p>
+                                    <p className="mt-2 text-sm">Cancel to keep your wallet active.</p>
+                                </div>
+                            ) : fraudAnalysis?.high_score_warning ? (
+                                <div className="text-dark-400 mb-6">
+                                    <p className="text-warning font-medium mb-2">
+                                        This transaction has a critical risk score of {fraudAnalysis.anomaly_score}/100.
+                                    </p>
+                                    <p>
+                                        Due to the high risk, confirming this transaction will <span className="text-danger font-semibold">freeze your wallet for {fraudAnalysis.freeze_minutes} minutes</span> for security review.
+                                    </p>
+                                    <p className="mt-2 text-sm">Cancel to keep your wallet active.</p>
+                                </div>
+                            ) : (
+                                <p className="text-dark-400 mb-6">
+                                    This transaction has been flagged. Please confirm within {countdown} seconds or
+                                    your wallet will be temporarily frozen.
+                                </p>
+                            )}
                         </div>
 
                         {/* Transaction Details */}

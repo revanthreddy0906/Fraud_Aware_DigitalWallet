@@ -143,14 +143,21 @@ class FraudDetectionEngine:
         # High-risk transactions require confirmation
         requires_confirmation = risk_level == "high"
         
+        # Auto-freeze if:
+        # 1. Velocity limit exceeded (already calculated)
+        # 2. Anomaly score is very high (>= 80)
+        high_score_freeze = total_score >= 80
+        should_auto_freeze = should_auto_freeze or high_score_freeze
+        
         return {
             "anomaly_score": total_score,
             "risk_level": risk_level,
             "risk_factors": risk_factors,
             "requires_confirmation": requires_confirmation,
             "alerts": alerts,
-            "should_auto_freeze": should_auto_freeze if 'should_auto_freeze' in locals() else False,
-            "velocity_count": velocity_count if 'velocity_count' in locals() else 0
+            "should_auto_freeze": should_auto_freeze,
+            "velocity_count": velocity_count if 'velocity_count' in locals() else 0,
+            "high_score_freeze": high_score_freeze
         }
     
     def _check_velocity(self, user_id: int, max_txns: int, timestamp: datetime, last_freeze_until: datetime = None) -> Tuple[int, bool, int]:
@@ -302,6 +309,17 @@ class FraudDetectionEngine:
         """Create alert records for triggered fraud rules"""
         created_alerts = []
         
+        # Map risk factors to valid alert types
+        alert_type_map = {
+            "exceeds_max": "high_amount",
+            "high_amount": "high_amount",
+            "unusual_time": "unusual_time",
+            "new_device": "new_device",
+            "new_location": "new_location",
+            "high_velocity": "high_velocity",
+            "impossible_travel": "impossible_travel",
+        }
+        
         severity_map = {
             "exceeds_max": "high",
             "high_amount": "medium",
@@ -315,10 +333,13 @@ class FraudDetectionEngine:
         for i, factor in enumerate(risk_factors):
             message = alerts_messages[i] if i < len(alerts_messages) else f"Risk factor: {factor}"
             
+            # Use mapped alert type or default to manual_freeze if unknown (safe fallback)
+            alert_type = alert_type_map.get(factor, "manual_freeze")
+            
             alert = Alert(
                 user_id=user_id,
                 txn_id=txn_id,
-                alert_type=factor,
+                alert_type=alert_type,
                 severity=severity_map.get(factor, "medium"),
                 message=message
             )

@@ -85,6 +85,13 @@ export interface FraudAnalysis {
     risk_factors: string[];
     requires_confirmation: boolean;
     alerts: string[];
+    // Velocity limit warning properties
+    velocity_warning?: boolean;
+    high_score_warning?: boolean;
+    freeze_warning?: boolean;
+    velocity_count?: number;
+    max_allowed?: number;
+    freeze_minutes?: number;
 }
 
 export interface LoginResponse {
