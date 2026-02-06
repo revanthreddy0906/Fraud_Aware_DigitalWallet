@@ -23,6 +23,9 @@ import {
     Area,
 } from 'recharts';
 import { transactionsAPI, alertsAPI, getUser, User } from '@/lib/api';
+import TiltedTexturedCard from '@/components/TiltedTexturedCard';
+import SpotlightCard from '@/components/SpotlightCard';
+import CountUp from '@/components/CountUp';
 
 interface Stats {
     this_month: {
@@ -110,7 +113,7 @@ export default function OverviewPage() {
             {/* Welcome Message */}
             <div className="mb-8">
                 <h1 className="text-2xl lg:text-3xl font-bold text-white">
-                    Welcome back, <span className="gradient-text">{user?.username || 'User'}</span>
+                    Welcome back, <span className="text-white">{user?.username || 'User'}</span>
                 </h1>
                 <p className="text-dark-400 mt-1">Here&apos;s your wallet overview and security status</p>
             </div>
@@ -118,7 +121,7 @@ export default function OverviewPage() {
             {/* Top Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                 {/* Balance Card */}
-                <div className="glass-card p-6 glass-card-hover">
+                <TiltedTexturedCard className="p-6" spotlightColor="rgba(255, 255, 255, 0.2)">
                     <div className="flex items-center justify-between mb-4">
                         <div className="w-12 h-12 rounded-xl bg-primary-500/20 flex items-center justify-center">
                             <Wallet className="w-6 h-6 text-primary-400" />
@@ -133,13 +136,18 @@ export default function OverviewPage() {
                         </span>
                     </div>
                     <p className="text-dark-400 text-sm">Current Balance</p>
-                    <p className="text-2xl lg:text-3xl font-bold text-white mt-1">
-                        {formatCurrency(balance)}
+                    <p className="font-bold text-white mt-1 flex items-baseline gap-1">
+                        <span className="text-xl lg:text-2xl">$</span>
+                        <CountUp
+                            to={balance}
+                            decimals={2}
+                            className="text-2xl lg:text-3xl"
+                        />
                     </p>
-                </div>
+                </TiltedTexturedCard>
 
                 {/* Monthly Spending */}
-                <div className="glass-card p-6 glass-card-hover">
+                <TiltedTexturedCard className="p-6" spotlightColor="rgba(255, 255, 255, 0.2)">
                     <div className="flex items-center justify-between mb-4">
                         <div className="w-12 h-12 rounded-xl bg-danger/20 flex items-center justify-center">
                             <ArrowUpRight className="w-6 h-6 text-danger" />
@@ -147,16 +155,21 @@ export default function OverviewPage() {
                         <TrendingUp className="w-5 h-5 text-dark-500" />
                     </div>
                     <p className="text-dark-400 text-sm">This Month Spent</p>
-                    <p className="text-2xl lg:text-3xl font-bold text-white mt-1">
-                        {formatCurrency(stats?.this_month.total_spent || 0)}
+                    <p className="font-bold text-white mt-1 flex items-baseline gap-1">
+                        <span className="text-xl lg:text-2xl">$</span>
+                        <CountUp
+                            to={stats?.this_month.total_spent || 0}
+                            decimals={2}
+                            className="text-2xl lg:text-3xl"
+                        />
                     </p>
                     <p className="text-xs text-dark-500 mt-2">
                         {stats?.this_month.transaction_count || 0} transactions
                     </p>
-                </div>
+                </TiltedTexturedCard>
 
                 {/* Monthly Income */}
-                <div className="glass-card p-6 glass-card-hover">
+                <TiltedTexturedCard className="p-6" spotlightColor="rgba(255, 255, 255, 0.2)">
                     <div className="flex items-center justify-between mb-4">
                         <div className="w-12 h-12 rounded-xl bg-success/20 flex items-center justify-center">
                             <ArrowDownRight className="w-6 h-6 text-success" />
@@ -164,13 +177,18 @@ export default function OverviewPage() {
                         <TrendingDown className="w-5 h-5 text-dark-500" />
                     </div>
                     <p className="text-dark-400 text-sm">This Month Received</p>
-                    <p className="text-2xl lg:text-3xl font-bold text-white mt-1">
-                        {formatCurrency(stats?.this_month.total_received || 0)}
+                    <p className="font-bold text-white mt-1 flex items-baseline gap-1">
+                        <span className="text-xl lg:text-2xl">$</span>
+                        <CountUp
+                            to={stats?.this_month.total_received || 0}
+                            decimals={2}
+                            className="text-2xl lg:text-3xl"
+                        />
                     </p>
-                </div>
+                </TiltedTexturedCard>
 
                 {/* Security Score */}
-                <div className="glass-card p-6 glass-card-hover">
+                <TiltedTexturedCard className="p-6" spotlightColor="rgba(255, 255, 255, 0.2)">
                     <div className="flex items-center justify-between mb-4">
                         <div className="w-12 h-12 rounded-xl bg-warning/20 flex items-center justify-center">
                             <Shield className="w-6 h-6 text-warning" />
@@ -183,18 +201,21 @@ export default function OverviewPage() {
                     </div>
                     <p className="text-dark-400 text-sm">Blocked Transactions</p>
                     <p className="text-2xl lg:text-3xl font-bold text-white mt-1">
-                        {stats?.all_time.blocked_transactions || 0}
+                        <CountUp
+                            to={stats?.all_time.blocked_transactions || 0}
+                            decimals={0}
+                        />
                     </p>
                     <p className="text-xs text-dark-500 mt-2">
                         All-time fraud prevention
                     </p>
-                </div>
+                </TiltedTexturedCard>
             </div>
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Risk Timeline Chart */}
-                <div className="lg:col-span-2 glass-card p-6">
+                <SpotlightCard className="lg:col-span-2 p-6" spotlightColor="transparent">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-lg font-semibold text-white">Risk Timeline</h3>
@@ -208,8 +229,8 @@ export default function OverviewPage() {
                                 <AreaChart data={timeline}>
                                     <defs>
                                         <linearGradient id="riskGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -231,15 +252,15 @@ export default function OverviewPage() {
                                             borderRadius: '8px',
                                         }}
                                         labelStyle={{ color: '#e2e8f0' }}
-                                        itemStyle={{ color: '#0ea5e9' }}
+                                        itemStyle={{ color: '#ffffff' }}
                                         formatter={(value) => [`${(value as number)?.toFixed(1) || '0'}`, 'Avg Score']}
                                         labelFormatter={(label) => new Date(label).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                                     />
                                     <Area
                                         type="monotone"
                                         dataKey="avg_anomaly_score"
-                                        stroke="#0ea5e9"
-                                        strokeWidth={2}
+                                        stroke="#FFFFFF"
+                                        strokeWidth={1}
                                         fillOpacity={1}
                                         fill="url(#riskGradient)"
                                     />
@@ -259,10 +280,10 @@ export default function OverviewPage() {
                             </div>
                         )}
                     </div>
-                </div>
+                </SpotlightCard>
 
                 {/* Risk Breakdown */}
-                <div className="glass-card p-6">
+                <TiltedTexturedCard className="p-6" spotlightColor="rgba(255, 255, 255, 0.2)">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-lg font-semibold text-white">Risk Breakdown</h3>
@@ -356,11 +377,11 @@ export default function OverviewPage() {
                             </span>
                         </div>
                     </div>
-                </div>
+                </TiltedTexturedCard>
             </div>
 
             {/* Quick Actions */}
-            <div className="glass-card p-6">
+            <TiltedTexturedCard className="p-6" spotlightColor="rgba(255, 255, 255, 0.2)">
                 <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <a
@@ -400,7 +421,8 @@ export default function OverviewPage() {
                         <span className="text-sm text-dark-300 group-hover:text-white">Settings</span>
                     </a>
                 </div>
-            </div>
+            </TiltedTexturedCard>
         </div>
     );
 }
+

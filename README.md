@@ -172,4 +172,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-Built with ❤️ by [Revanth Reddy](https://github.com/revanthreddy0906)
+Built with ❤️ by [Manish Reddy](https://github.com/revanthreddy0906)

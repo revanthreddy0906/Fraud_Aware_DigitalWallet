@@ -12,6 +12,8 @@ import {
     TrendingDown,
 } from 'lucide-react';
 import { transactionsAPI, alertsAPI, Transaction } from '@/lib/api';
+import TiltedTexturedCard from '@/components/TiltedTexturedCard';
+import CountUp from '@/components/CountUp';
 
 export default function BalancePage() {
     const [balance, setBalance] = useState(0);
@@ -103,17 +105,14 @@ export default function BalancePage() {
     return (
         <div className="space-y-6">
             {/* Main Balance Card */}
-            <div className="glass-card p-8 lg:p-12 relative overflow-hidden">
-                {/* Background decoration */}
-                <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl" />
-
+            <TiltedTexturedCard className="p-8 lg:p-12 relative overflow-hidden" spotlightColor="rgba(255, 255, 255, 0.2)">
                 <div className="relative">
                     {/* Status Badge */}
                     <div className="flex items-center justify-between mb-6">
                         <span
                             className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${walletStatus === 'frozen'
-                                    ? 'bg-info/20 text-info border border-info/30'
-                                    : 'bg-success/20 text-success border border-success/30'
+                                ? 'bg-info/20 text-info border border-info/30'
+                                : 'bg-success/20 text-success border border-success/30'
                                 }`}
                         >
                             {walletStatus === 'frozen' ? (
@@ -140,8 +139,9 @@ export default function BalancePage() {
                     {/* Balance Display */}
                     <div className="text-center mb-8">
                         <p className="text-dark-400 mb-2">Available Balance</p>
-                        <h1 className="text-5xl lg:text-6xl font-bold text-white mb-4">
-                            {formatCurrency(balance)}
+                        <h1 className="text-5xl lg:text-6xl font-bold text-white mb-4 flex items-baseline justify-center gap-2">
+                            <span className="text-3xl lg:text-4xl">$</span>
+                            <CountUp to={balance} decimals={2} />
                         </h1>
                         <p className="text-dark-500">USD</p>
                     </div>
@@ -195,7 +195,7 @@ export default function BalancePage() {
                         </div>
                     )}
                 </div>
-            </div>
+            </TiltedTexturedCard>
 
             {/* Recent Transactions */}
             <div className="glass-card p-6">
@@ -219,8 +219,8 @@ export default function BalancePage() {
                                 <div className="flex items-center gap-4">
                                     <div
                                         className={`w-10 h-10 rounded-xl flex items-center justify-center ${txn.transaction_type === 'credit'
-                                                ? 'bg-success/20'
-                                                : 'bg-danger/20'
+                                            ? 'bg-success/20'
+                                            : 'bg-danger/20'
                                             }`}
                                     >
                                         {txn.transaction_type === 'credit' ? (
@@ -246,10 +246,10 @@ export default function BalancePage() {
                                     </p>
                                     <span
                                         className={`text-xs px-2 py-0.5 rounded-full ${txn.risk_level === 'low'
-                                                ? 'bg-success/20 text-success'
-                                                : txn.risk_level === 'medium'
-                                                    ? 'bg-warning/20 text-warning'
-                                                    : 'bg-danger/20 text-danger'
+                                            ? 'bg-success/20 text-success'
+                                            : txn.risk_level === 'medium'
+                                                ? 'bg-warning/20 text-warning'
+                                                : 'bg-danger/20 text-danger'
                                             }`}
                                     >
                                         {txn.risk_level}

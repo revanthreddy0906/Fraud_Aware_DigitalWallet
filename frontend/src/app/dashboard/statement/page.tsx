@@ -13,6 +13,7 @@ import {
     ChevronRight,
 } from 'lucide-react';
 import { transactionsAPI, Transaction } from '@/lib/api';
+import CountUp from '@/components/CountUp';
 
 type FilterPeriod = 'week' | 'month' | '3months' | 'all';
 
@@ -55,8 +56,8 @@ export default function StatementPage() {
         }
 
         return {
-            start_date: start?.toISOString(),
-            end_date: now.toISOString(),
+            start_date: start?.toISOString().replace('Z', '+00:00'),
+            end_date: now.toISOString().replace('Z', '+00:00'),
         };
     };
 
