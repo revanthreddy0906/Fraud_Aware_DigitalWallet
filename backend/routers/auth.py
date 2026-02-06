@@ -130,7 +130,7 @@ async def login(
     
     # Update login metadata
     user.last_login_time = datetime.now()
-    user.last_login_location = "San Francisco, USA"  # In production, get from IP geolocation
+    user.last_login_location = "Mumbai, Maharashtra"  # In production, get from IP geolocation
     user.last_login_device = "Chrome on MacOS"  # In production, parse User-Agent
     db.commit()
     

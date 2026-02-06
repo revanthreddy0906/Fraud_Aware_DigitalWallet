@@ -9,7 +9,7 @@ from urllib.parse import quote_plus
 
 class Settings(BaseSettings):
     # Application
-    APP_NAME: str = "Fraud-Aware Digital Wallet"
+    APP_NAME: str = "Money Square"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
     

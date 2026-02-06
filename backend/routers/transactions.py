@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 
 from database.connection import get_db
-from models import User, Transaction, KnownDevice, KnownLocation
+from models import User, Transaction, KnownDevice, KnownLocation, Alert
 from routers.auth import get_current_user
 from services.fraud_detection import FraudDetectionEngine
 from services.behavior_baseline import BehaviorBaselineService
@@ -56,8 +56,8 @@ async def get_balance(
     # Check if wallet should be unfrozen
     if current_user.wallet_status == 'frozen' and current_user.freeze_until:
         if datetime.now() > current_user.freeze_until:
+            # Keep freeze_until! Used by velocity check to reset count
             current_user.wallet_status = 'active'
-            current_user.freeze_until = None
     
     return {
         "balance": float(current_user.balance) if current_user.balance else 0,
@@ -86,8 +86,8 @@ async def send_money(
             )
         else:
             # Auto-unfreeze if time has passed
+            # Keep freeze_until! Used by velocity check to reset count
             current_user.wallet_status = 'active'
-            current_user.freeze_until = None
     
     # Check balance
     if Decimal(str(transaction.amount)) > current_user.balance:
@@ -105,6 +105,57 @@ async def send_money(
         location=transaction.location or "Unknown",
         timestamp=datetime.now()
     )
+    
+    # Handle auto-freeze for velocity limit exceeded
+    if fraud_result.get("should_auto_freeze"):
+        freeze_minutes = current_user.freeze_duration_minutes or 30
+        current_user.wallet_status = 'frozen'
+        current_user.freeze_until = datetime.now() + timedelta(minutes=freeze_minutes)
+        
+        # Create blocked transaction record
+        blocked_txn = Transaction(
+            user_id=current_user.user_id,
+            amount=Decimal(str(transaction.amount)),
+            transaction_type='debit',
+            recipient=transaction.recipient,
+            description=transaction.description or f"Payment to {transaction.recipient}",
+            device_id=transaction.device_id,
+            location=transaction.location,
+            anomaly_score=fraud_result["anomaly_score"],
+            risk_level=fraud_result["risk_level"],
+            risk_factors=fraud_result["risk_factors"],
+            status='blocked',
+            requires_confirmation=False
+        )
+        db.add(blocked_txn)
+        
+        # Create auto-freeze alert
+        velocity_count = fraud_result.get("velocity_count", 0)
+        auto_freeze_alert = Alert(
+            user_id=current_user.user_id,
+            txn_id=None,  # Will be updated after commit
+            alert_type='auto_freeze',
+            severity='critical',
+            message=f"Wallet auto-frozen: {velocity_count} transactions in 10 minutes exceeded limit of {current_user.max_txns_10min}"
+        )
+        db.add(auto_freeze_alert)
+        db.commit()
+        db.refresh(blocked_txn)
+        
+        # Update alert with transaction id
+        auto_freeze_alert.txn_id = blocked_txn.txn_id
+        db.commit()
+        
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error": "auto_freeze",
+                "message": f"Wallet frozen for {freeze_minutes} minutes due to high transaction velocity ({velocity_count} transactions in 10 minutes)",
+                "freeze_until": current_user.freeze_until.isoformat(),
+                "velocity_count": velocity_count,
+                "max_allowed": current_user.max_txns_10min
+            }
+        )
     
     # Create transaction record
     new_txn = Transaction(

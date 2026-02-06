@@ -23,7 +23,7 @@ import {
     Pie,
     Cell,
 } from 'recharts';
-import { alertsAPI, usersAPI, Alert } from '@/lib/api';
+import { alertsAPI, usersAPI, Alert, formatINR } from '@/lib/api';
 
 interface AlertStats {
     total_alerts: number;
@@ -113,7 +113,7 @@ export default function RiskAnalysisPage() {
     };
 
     const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('en-US', {
+        return new Date(dateStr).toLocaleDateString('en-IN', {
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
@@ -301,7 +301,7 @@ export default function RiskAnalysisPage() {
                                             borderRadius: '8px',
                                         }}
                                     />
-                                    <Bar dataKey="count" fill="#0ea5e9" radius={[0, 4, 4, 0]} />
+                                    <Bar dataKey="count" fill="#E53935" radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -324,13 +324,13 @@ export default function RiskAnalysisPage() {
                         <div className="p-4 rounded-xl bg-dark-900/50 border border-dark-700">
                             <p className="text-dark-400 text-sm mb-1">Avg Transaction</p>
                             <p className="text-xl font-bold text-white">
-                                ${baseline.avg_transaction_amount.toFixed(0)}
+                                {formatINR(baseline.avg_transaction_amount)}
                             </p>
                         </div>
                         <div className="p-4 rounded-xl bg-dark-900/50 border border-dark-700">
                             <p className="text-dark-400 text-sm mb-1">Max Historical</p>
                             <p className="text-xl font-bold text-white">
-                                ${baseline.max_historical_amount.toFixed(0)}
+                                {formatINR(baseline.max_historical_amount)}
                             </p>
                         </div>
                         <div className="p-4 rounded-xl bg-dark-900/50 border border-dark-700">
@@ -370,7 +370,8 @@ export default function RiskAnalysisPage() {
                                 onChange={(e) => setAlertPrefs({ ...alertPrefs, alert_sms: e.target.checked })}
                                 className="sr-only peer"
                             />
-                            <div className="w-11 h-6 bg-dark-700 peer-focus:ring-2 peer-focus:ring-primary-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                            <div className="w-14 h-7 bg-dark-500 border-2 border-dark-400 peer-focus:ring-2 peer-focus:ring-success/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success peer-checked:border-success"></div>
+                            <span className="ml-2 text-xs text-dark-400">{alertPrefs.alert_sms ? 'ON' : 'OFF'}</span>
                         </label>
                     </div>
 
@@ -386,7 +387,8 @@ export default function RiskAnalysisPage() {
                                 onChange={(e) => setAlertPrefs({ ...alertPrefs, alert_email: e.target.checked })}
                                 className="sr-only peer"
                             />
-                            <div className="w-11 h-6 bg-dark-700 peer-focus:ring-2 peer-focus:ring-primary-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                            <div className="w-14 h-7 bg-dark-500 border-2 border-dark-400 peer-focus:ring-2 peer-focus:ring-success/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success peer-checked:border-success"></div>
+                            <span className="ml-2 text-xs text-dark-400">{alertPrefs.alert_email ? 'ON' : 'OFF'}</span>
                         </label>
                     </div>
 
@@ -428,8 +430,8 @@ export default function RiskAnalysisPage() {
                             <div
                                 key={alert.alert_id}
                                 className={`flex items-center justify-between p-4 rounded-xl border ${alert.resolved
-                                        ? 'bg-dark-900/30 border-dark-700 opacity-60'
-                                        : 'bg-dark-900/50 border-dark-600'
+                                    ? 'bg-dark-900/30 border-dark-700 opacity-60'
+                                    : 'bg-dark-900/50 border-dark-600'
                                     }`}
                             >
                                 <div className="flex items-center gap-4">

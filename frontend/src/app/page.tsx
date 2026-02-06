@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Eye, EyeOff, Wallet, AlertTriangle, MapPin, Clock, Monitor } from 'lucide-react';
+import Image from 'next/image';
+import { Eye, EyeOff, Wallet, AlertTriangle, MapPin, Clock, Monitor } from 'lucide-react';
 import { authAPI, setToken, setUser, getToken } from '@/lib/api';
 
 export default function LoginPage() {
@@ -62,7 +63,7 @@ export default function LoginPage() {
   const formatLastLoginTime = (time: string | null) => {
     if (!time) return 'Never';
     const date = new Date(time);
-    return date.toLocaleString();
+    return date.toLocaleString('en-IN');
   };
 
   return (
@@ -70,16 +71,22 @@ export default function LoginPage() {
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary-600/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent-500/10 rounded-full blur-3xl" />
       </div>
 
       <div className="w-full max-w-md relative">
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 mb-4 animate-float">
-            <Shield className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <Image
+              src="/logo.jpeg"
+              alt="Money Square"
+              width={200}
+              height={60}
+              className="rounded-lg"
+              priority
+            />
           </div>
-          <h1 className="text-3xl font-bold gradient-text">Fraud-Aware Wallet</h1>
           <p className="text-dark-400 mt-2">Secure digital transactions with smart protection</p>
         </div>
 
@@ -111,27 +118,8 @@ export default function LoginPage() {
         {/* Login/Register Form */}
         {!lastLogin && (
           <div className="glass-card p-8">
-            {/* Tabs */}
-            <div className="flex gap-4 mb-6">
-              <button
-                onClick={() => setIsLogin(true)}
-                className={`flex-1 py-3 rounded-xl font-medium transition-all ${isLogin
-                    ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
-                    : 'text-dark-400 hover:text-dark-300'
-                  }`}
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => setIsLogin(false)}
-                className={`flex-1 py-3 rounded-xl font-medium transition-all ${!isLogin
-                    ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
-                    : 'text-dark-400 hover:text-dark-300'
-                  }`}
-              >
-                Register
-              </button>
-            </div>
+            {/* Title */}
+            <h2 className="text-xl font-semibold text-white text-center mb-6">Sign In</h2>
 
             {/* Error Message */}
             {error && (
@@ -155,21 +143,7 @@ export default function LoginPage() {
                 />
               </div>
 
-              {!isLogin && (
-                <div>
-                  <label className="block text-sm font-medium text-dark-300 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="input-field"
-                    placeholder="Enter email"
-                    required={!isLogin}
-                  />
-                </div>
-              )}
+
 
               <div>
                 <label className="block text-sm font-medium text-dark-300 mb-2">
@@ -204,7 +178,7 @@ export default function LoginPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="input-field"
-                    placeholder="+1-555-0100"
+                    placeholder="+91-98765-43210"
                   />
                 </div>
               )}

@@ -22,7 +22,7 @@ import {
     AreaChart,
     Area,
 } from 'recharts';
-import { transactionsAPI, alertsAPI, getUser, User } from '@/lib/api';
+import { transactionsAPI, alertsAPI, getUser, User, formatINR } from '@/lib/api';
 
 interface Stats {
     this_month: {
@@ -85,10 +85,7 @@ export default function OverviewPage() {
     };
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-        }).format(amount);
+        return formatINR(amount);
     };
 
     const getRiskColor = (score: number) => {
@@ -208,8 +205,8 @@ export default function OverviewPage() {
                                 <AreaChart data={timeline}>
                                     <defs>
                                         <linearGradient id="riskGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#E53935" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#E53935" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -231,14 +228,14 @@ export default function OverviewPage() {
                                             borderRadius: '8px',
                                         }}
                                         labelStyle={{ color: '#e2e8f0' }}
-                                        itemStyle={{ color: '#0ea5e9' }}
+                                        itemStyle={{ color: '#E53935' }}
                                         formatter={(value) => [`${(value as number)?.toFixed(1) || '0'}`, 'Avg Score']}
-                                        labelFormatter={(label) => new Date(label).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                        labelFormatter={(label) => new Date(label).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}
                                     />
                                     <Area
                                         type="monotone"
                                         dataKey="avg_anomaly_score"
-                                        stroke="#0ea5e9"
+                                        stroke="#E53935"
                                         strokeWidth={2}
                                         fillOpacity={1}
                                         fill="url(#riskGradient)"

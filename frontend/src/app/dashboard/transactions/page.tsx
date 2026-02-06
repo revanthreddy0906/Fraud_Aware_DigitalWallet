@@ -11,13 +11,13 @@ import {
     Monitor,
     Loader2,
 } from 'lucide-react';
-import { transactionsAPI, Transaction, FraudAnalysis } from '@/lib/api';
+import { transactionsAPI, Transaction, FraudAnalysis, formatINR } from '@/lib/api';
 
 export default function TransactionsPage() {
     const [amount, setAmount] = useState('');
     const [recipient, setRecipient] = useState('');
     const [description, setDescription] = useState('');
-    const [location, setLocation] = useState('San Francisco, USA');
+    const [location, setLocation] = useState('Chennai, Tamil Nadu');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -63,12 +63,19 @@ export default function TransactionsPage() {
         setTransactionComplete(false);
 
         try {
+            // Get or create persistent device fingerprint
+            let deviceId = localStorage.getItem('device_fingerprint');
+            if (!deviceId) {
+                deviceId = 'web_browser_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('device_fingerprint', deviceId);
+            }
+
             const result = await transactionsAPI.send({
                 amount: parseFloat(amount),
                 recipient,
                 description: description || undefined,
                 location,
-                device_id: 'web_browser_' + Date.now(),
+                device_id: deviceId,
             });
 
             setFraudAnalysis(result.fraud_analysis);
@@ -178,15 +185,15 @@ export default function TransactionsPage() {
 
                     <div>
                         <label className="block text-sm font-medium text-dark-300 mb-2">
-                            Amount (USD)
+                            Amount (INR)
                         </label>
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-400">$</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none z-10">₹</span>
                             <input
                                 type="number"
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
-                                className="input-field pl-8"
+                                className="input-field pl-10"
                                 placeholder="0.00"
                                 min="0.01"
                                 step="0.01"
@@ -218,13 +225,14 @@ export default function TransactionsPage() {
                             onChange={(e) => setLocation(e.target.value)}
                             className="input-field"
                         >
-                            <option value="San Francisco, USA">San Francisco, USA</option>
-                            <option value="New York, USA">New York, USA</option>
-                            <option value="Los Angeles, USA">Los Angeles, USA</option>
-                            <option value="Chicago, USA">Chicago, USA</option>
-                            <option value="Miami, USA">Miami, USA (New Location)</option>
-                            <option value="London, UK">London, UK (New Location)</option>
-                            <option value="Tokyo, Japan">Tokyo, Japan (New Location)</option>
+                            <option value="Chennai, Tamil Nadu">Chennai, Tamil Nadu</option>
+                            <option value="Mumbai, Maharashtra">Mumbai, Maharashtra</option>
+                            <option value="Delhi, NCR">Delhi, NCR</option>
+                            <option value="Bangalore, Karnataka">Bangalore, Karnataka</option>
+                            <option value="Hyderabad, Telangana">Hyderabad, Telangana</option>
+                            <option value="Kolkata, West Bengal">Kolkata, West Bengal (New Location)</option>
+                            <option value="Dubai, UAE">Dubai, UAE (New Location)</option>
+                            <option value="Singapore">Singapore (New Location)</option>
                         </select>
                         <p className="text-xs text-dark-500 mt-1">
                             Try selecting a new location to trigger fraud detection
@@ -343,7 +351,7 @@ export default function TransactionsPage() {
                             <div className="flex justify-between">
                                 <span className="text-dark-400">Amount</span>
                                 <span className="text-white font-medium">
-                                    ${parseFloat(amount).toFixed(2)}
+                                    {formatINR(parseFloat(amount))}
                                 </span>
                             </div>
                             <div className="flex justify-between">

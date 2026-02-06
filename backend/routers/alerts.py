@@ -73,6 +73,80 @@ async def get_unresolved_alerts(
     }
 
 
+@router.get("/stats")
+async def get_alert_stats(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    days: int = Query(30, ge=1, le=90)
+):
+    """Get alert statistics"""
+    start_date = datetime.now() - timedelta(days=days)
+    
+    alerts = db.query(Alert).filter(
+        Alert.user_id == current_user.user_id,
+        Alert.created_at >= start_date
+    ).all()
+    
+    # Count by type
+    by_type = {}
+    for alert in alerts:
+        alert_type = alert.alert_type
+        by_type[alert_type] = by_type.get(alert_type, 0) + 1
+    
+    # Count by severity
+    by_severity = {"low": 0, "medium": 0, "high": 0, "critical": 0}
+    for alert in alerts:
+        if alert.severity in by_severity:
+            by_severity[alert.severity] += 1
+    
+    # Resolution rate
+    resolved_count = sum(1 for a in alerts if a.resolved)
+    resolution_rate = (resolved_count / len(alerts) * 100) if alerts else 100
+    
+    return {
+        "total_alerts": len(alerts),
+        "by_type": by_type,
+        "by_severity": by_severity,
+        "resolved": resolved_count,
+        "unresolved": len(alerts) - resolved_count,
+        "resolution_rate": round(resolution_rate, 1),
+        "period_days": days
+    }
+
+
+@router.get("/behavior-baseline")
+async def get_behavior_baseline(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get user's behavior baseline for risk analysis"""
+    baseline_service = BehaviorBaselineService(db)
+    baseline = baseline_service.get_baseline(current_user.user_id)
+    
+    if not baseline:
+        raise HTTPException(status_code=404, detail="Baseline not computed yet")
+    
+    return baseline
+
+
+@router.post("/recompute-baseline")
+async def recompute_baseline(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Force recomputation of behavior baseline"""
+    baseline_service = BehaviorBaselineService(db)
+    baseline = baseline_service.compute_baseline(current_user.user_id)
+    
+    if not baseline:
+        raise HTTPException(status_code=500, detail="Failed to compute baseline")
+    
+    return {
+        "message": "Baseline recomputed",
+        "baseline": baseline.to_dict()
+    }
+
+
 @router.get("/{alert_id}")
 async def get_alert(
     alert_id: int,
@@ -182,84 +256,12 @@ async def unfreeze_wallet(
         )
     
     current_user.wallet_status = 'active'
-    current_user.freeze_until = None
+    # Set freeze_until to NOW so velocity check starts counting fresh from this moment
+    # This prevents old transactions from triggering immediate re-freeze
+    current_user.freeze_until = datetime.now()
     db.commit()
     
     return {
-        "message": "Wallet unfrozen",
+        "message": "Wallet unfrozen - velocity counter reset",
         "wallet_status": "active"
-    }
-
-
-@router.get("/stats")
-async def get_alert_stats(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    days: int = Query(30, ge=1, le=90)
-):
-    """Get alert statistics"""
-    start_date = datetime.now() - timedelta(days=days)
-    
-    alerts = db.query(Alert).filter(
-        Alert.user_id == current_user.user_id,
-        Alert.created_at >= start_date
-    ).all()
-    
-    # Count by type
-    by_type = {}
-    for alert in alerts:
-        alert_type = alert.alert_type
-        by_type[alert_type] = by_type.get(alert_type, 0) + 1
-    
-    # Count by severity
-    by_severity = {"low": 0, "medium": 0, "high": 0, "critical": 0}
-    for alert in alerts:
-        if alert.severity in by_severity:
-            by_severity[alert.severity] += 1
-    
-    # Resolution rate
-    resolved_count = sum(1 for a in alerts if a.resolved)
-    resolution_rate = (resolved_count / len(alerts) * 100) if alerts else 100
-    
-    return {
-        "total_alerts": len(alerts),
-        "by_type": by_type,
-        "by_severity": by_severity,
-        "resolved": resolved_count,
-        "unresolved": len(alerts) - resolved_count,
-        "resolution_rate": round(resolution_rate, 1),
-        "period_days": days
-    }
-
-
-@router.get("/behavior-baseline")
-async def get_behavior_baseline(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get user's behavior baseline for risk analysis"""
-    baseline_service = BehaviorBaselineService(db)
-    baseline = baseline_service.get_baseline(current_user.user_id)
-    
-    if not baseline:
-        raise HTTPException(status_code=404, detail="Baseline not computed yet")
-    
-    return baseline
-
-
-@router.post("/recompute-baseline")
-async def recompute_baseline(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Force recomputation of behavior baseline"""
-    baseline_service = BehaviorBaselineService(db)
-    baseline = baseline_service.compute_baseline(current_user.user_id)
-    
-    if not baseline:
-        raise HTTPException(status_code=500, detail="Failed to compute baseline")
-    
-    return {
-        "message": "Baseline recomputed",
-        "baseline": baseline.to_dict()
     }

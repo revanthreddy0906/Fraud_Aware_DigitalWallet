@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
     LayoutDashboard,
     Send,
@@ -70,8 +71,8 @@ export default function DashboardLayout({
         };
 
         fetchData();
-        // Refresh every 30 seconds
-        const interval = setInterval(fetchData, 30000);
+        // Refresh every 5 seconds for faster wallet status updates
+        const interval = setInterval(fetchData, 5000);
         return () => clearInterval(interval);
     }, [router]);
 
@@ -105,16 +106,15 @@ export default function DashboardLayout({
             >
                 <div className="flex flex-col h-full">
                     {/* Logo */}
-                    <div className="p-6 border-b border-dark-700">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                                <Shield className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="font-bold text-white">FraudAware</h1>
-                                <p className="text-xs text-dark-400">Digital Wallet</p>
-                            </div>
-                        </div>
+                    <div className="p-4 border-b border-dark-700">
+                        <Image
+                            src="/logo.jpeg"
+                            alt="Money Square"
+                            width={280}
+                            height={80}
+                            className="rounded-lg w-full h-auto"
+                            priority
+                        />
                     </div>
 
                     {/* Wallet Status */}
@@ -222,7 +222,7 @@ export default function DashboardLayout({
 
                             {/* Current time */}
                             <span className="hidden sm:block text-sm text-dark-400">
-                                {new Date().toLocaleDateString('en-US', {
+                                {new Date().toLocaleDateString('en-IN', {
                                     weekday: 'short',
                                     month: 'short',
                                     day: 'numeric',

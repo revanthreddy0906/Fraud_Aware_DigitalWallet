@@ -11,7 +11,7 @@ import {
     TrendingUp,
     TrendingDown,
 } from 'lucide-react';
-import { transactionsAPI, alertsAPI, Transaction } from '@/lib/api';
+import { transactionsAPI, alertsAPI, Transaction, formatINR } from '@/lib/api';
 
 export default function BalancePage() {
     const [balance, setBalance] = useState(0);
@@ -68,14 +68,11 @@ export default function BalancePage() {
     };
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-        }).format(amount);
+        return formatINR(amount);
     };
 
     const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('en-US', {
+        return new Date(dateStr).toLocaleDateString('en-IN', {
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
@@ -112,8 +109,8 @@ export default function BalancePage() {
                     <div className="flex items-center justify-between mb-6">
                         <span
                             className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${walletStatus === 'frozen'
-                                    ? 'bg-info/20 text-info border border-info/30'
-                                    : 'bg-success/20 text-success border border-success/30'
+                                ? 'bg-info/20 text-info border border-info/30'
+                                : 'bg-success/20 text-success border border-success/30'
                                 }`}
                         >
                             {walletStatus === 'frozen' ? (
@@ -143,7 +140,7 @@ export default function BalancePage() {
                         <h1 className="text-5xl lg:text-6xl font-bold text-white mb-4">
                             {formatCurrency(balance)}
                         </h1>
-                        <p className="text-dark-500">USD</p>
+                        <p className="text-dark-500">INR</p>
                     </div>
 
                     {/* Freeze/Unfreeze Controls */}
@@ -219,8 +216,8 @@ export default function BalancePage() {
                                 <div className="flex items-center gap-4">
                                     <div
                                         className={`w-10 h-10 rounded-xl flex items-center justify-center ${txn.transaction_type === 'credit'
-                                                ? 'bg-success/20'
-                                                : 'bg-danger/20'
+                                            ? 'bg-success/20'
+                                            : 'bg-danger/20'
                                             }`}
                                     >
                                         {txn.transaction_type === 'credit' ? (
@@ -246,10 +243,10 @@ export default function BalancePage() {
                                     </p>
                                     <span
                                         className={`text-xs px-2 py-0.5 rounded-full ${txn.risk_level === 'low'
-                                                ? 'bg-success/20 text-success'
-                                                : txn.risk_level === 'medium'
-                                                    ? 'bg-warning/20 text-warning'
-                                                    : 'bg-danger/20 text-danger'
+                                            ? 'bg-success/20 text-success'
+                                            : txn.risk_level === 'medium'
+                                                ? 'bg-warning/20 text-warning'
+                                                : 'bg-danger/20 text-danger'
                                             }`}
                                     >
                                         {txn.risk_level}

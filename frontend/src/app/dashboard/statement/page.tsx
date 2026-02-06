@@ -12,7 +12,7 @@ import {
     ChevronLeft,
     ChevronRight,
 } from 'lucide-react';
-import { transactionsAPI, Transaction } from '@/lib/api';
+import { transactionsAPI, Transaction, formatINR } from '@/lib/api';
 
 type FilterPeriod = 'week' | 'month' | '3months' | 'all';
 
@@ -127,14 +127,11 @@ export default function StatementPage() {
     };
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-        }).format(amount);
+        return formatINR(amount);
     };
 
     const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('en-US', {
+        return new Date(dateStr).toLocaleDateString('en-IN', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',

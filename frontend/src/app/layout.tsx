@@ -8,9 +8,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "FraudAware Digital Wallet",
-  description: "A fraud-aware digital wallet with behavior-based fraud detection, real-time alerts, and auto-freeze mechanism",
-  keywords: ["digital wallet", "fraud detection", "secure payments", "financial security"],
+  title: "Money Square - Digital Wallet",
+  description: "Money Square - India's secure digital wallet with AI-powered fraud detection, real-time alerts, and auto-freeze protection",
+  keywords: ["digital wallet", "fraud detection", "secure payments", "UPI", "INR", "India"],
 };
 
 export default function RootLayout({

@@ -113,10 +113,13 @@ class FraudDetectionEngine:
                 total_score += self.RISK_POINTS["new_location"]
         
         # Rule 6: High transaction velocity
-        velocity_score = self._check_velocity(user_id, user.max_txns_10min, timestamp)
+        # Pass freeze_until to reset velocity count after wallet was unfrozen
+        velocity_score, should_auto_freeze, velocity_count = self._check_velocity(
+            user_id, user.max_txns_10min, timestamp, user.freeze_until
+        )
         if velocity_score > 0:
             risk_factors.append("high_velocity")
-            alerts.append("Multiple transactions in short time period")
+            alerts.append(f"High velocity: {velocity_count} transactions in last 10 minutes (limit: {user.max_txns_10min})")
             total_score += velocity_score
         
         # Rule 7: Impossible travel detection
@@ -145,25 +148,47 @@ class FraudDetectionEngine:
             "risk_level": risk_level,
             "risk_factors": risk_factors,
             "requires_confirmation": requires_confirmation,
-            "alerts": alerts
+            "alerts": alerts,
+            "should_auto_freeze": should_auto_freeze if 'should_auto_freeze' in locals() else False,
+            "velocity_count": velocity_count if 'velocity_count' in locals() else 0
         }
     
-    def _check_velocity(self, user_id: int, max_txns: int, timestamp: datetime) -> int:
-        """Check transaction velocity in the last 10 minutes"""
+    def _check_velocity(self, user_id: int, max_txns: int, timestamp: datetime, last_freeze_until: datetime = None) -> Tuple[int, bool, int]:
+        """
+        Check transaction velocity in the last 10 minutes.
+        
+        Only skips transactions before freeze_until if the freeze has ALREADY EXPIRED
+        (i.e., freeze_until is in the past). This prevents counting old transactions
+        that triggered the previous freeze.
+        
+        Returns:
+            Tuple of (risk_score, should_auto_freeze, transaction_count)
+        """
         ten_minutes_ago = timestamp - timedelta(minutes=10)
+        
+        # Only use freeze_until as cutoff if:
+        # 1. freeze_until is set
+        # 2. freeze_until is in the PAST (freeze has expired)
+        # 3. freeze_until is more recent than 10 mins ago
+        check_from = ten_minutes_ago
+        if last_freeze_until and last_freeze_until <= timestamp and last_freeze_until > ten_minutes_ago:
+            check_from = last_freeze_until
         
         recent_count = self.db.query(func.count(Transaction.txn_id)).filter(
             Transaction.user_id == user_id,
-            Transaction.timestamp >= ten_minutes_ago,
-            Transaction.status.in_(['completed', 'pending'])
+            Transaction.timestamp >= check_from,
+            Transaction.status == 'completed'  # Only count completed, not blocked/pending
         ).scalar()
         
-        if recent_count >= max_txns:
-            return self.RISK_POINTS["high_velocity"]
-        elif recent_count >= max_txns - 1:
-            return self.RISK_POINTS["high_velocity"] // 2
+        # Auto-freeze when exceeding limit
+        should_auto_freeze = recent_count >= max_txns
         
-        return 0
+        if recent_count >= max_txns:
+            return (self.RISK_POINTS["high_velocity"], should_auto_freeze, recent_count)
+        elif recent_count >= max_txns - 1:
+            return (self.RISK_POINTS["high_velocity"] // 2, False, recent_count)
+        
+        return (0, False, recent_count)
     
     def _check_impossible_travel(
         self, 

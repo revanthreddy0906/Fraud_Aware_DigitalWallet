@@ -2,6 +2,29 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Currency formatting for Indian Rupees (INR)
+export const formatINR = (amount: number): string => {
+    const formatter = new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+    return formatter.format(amount);
+};
+
+// Short format for compact display (e.g., ₹1.5L, ₹2.3Cr)
+export const formatINRShort = (amount: number): string => {
+    if (amount >= 10000000) {
+        return `₹${(amount / 10000000).toFixed(2)}Cr`;
+    } else if (amount >= 100000) {
+        return `₹${(amount / 100000).toFixed(2)}L`;
+    } else if (amount >= 1000) {
+        return `₹${(amount / 1000).toFixed(1)}K`;
+    }
+    return `₹${amount.toFixed(2)}`;
+};
+
 // Type definitions
 export interface User {
     user_id: number;
@@ -133,7 +156,15 @@ async function apiRequest<T>(
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ detail: 'An error occurred' }));
-        throw new Error(error.detail || 'Request failed');
+        // Handle both string and object error details
+        let errorMessage = 'Request failed';
+        if (typeof error.detail === 'string') {
+            errorMessage = error.detail;
+        } else if (typeof error.detail === 'object' && error.detail !== null) {
+            // For structured errors like auto-freeze, extract the message
+            errorMessage = error.detail.message || JSON.stringify(error.detail);
+        }
+        throw new Error(errorMessage);
     }
 
     return response.json();

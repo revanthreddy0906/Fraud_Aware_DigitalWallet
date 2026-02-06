@@ -1,31 +1,33 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0f172a;
+  --background: #121212;
   --foreground: #f8fafc;
-  --card-bg: rgba(30, 41, 59, 0.8);
-  --card-border: rgba(71, 85, 105, 0.5);
+  --card-bg: rgba(30, 30, 35, 0.8);
+  --card-border: rgba(80, 70, 70, 0.5);
+  --brand-primary: #E53935;
+  --brand-accent: #E91E63;
 }
 
 body {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  background: linear-gradient(135deg, #121212 0%, #1a1a1f 50%, #121212 100%);
   color: var(--foreground);
   min-height: 100vh;
 }
 
 /* Glassmorphism card styles */
 .glass-card {
-  background: rgba(30, 41, 59, 0.7);
+  background: rgba(25, 25, 30, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(71, 85, 105, 0.4);
+  border: 1px solid rgba(80, 70, 70, 0.3);
   border-radius: 16px;
 }
 
 .glass-card-hover:hover {
-  background: rgba(30, 41, 59, 0.85);
-  border-color: rgba(14, 165, 233, 0.4);
-  box-shadow: 0 8px 32px rgba(14, 165, 233, 0.15);
+  background: rgba(35, 30, 35, 0.9);
+  border-color: rgba(229, 57, 53, 0.4);
+  box-shadow: 0 8px 32px rgba(229, 57, 53, 0.15);
   transform: translateY(-2px);
   transition: all 0.3s ease;
 }
@@ -56,7 +58,7 @@ body {
 }
 
 .status-frozen {
-  color: #3b82f6;
+  color: #E91E63;
   animation: pulse 1s infinite;
 }
 
@@ -80,9 +82,9 @@ body {
   background: rgba(100, 116, 139, 0.8);
 }
 
-/* Button styles */
+/* Button styles - Money Square brand */
 .btn-primary {
-  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  background: linear-gradient(135deg, #E53935, #E91E63);
   color: white;
   padding: 0.75rem 1.5rem;
   border-radius: 12px;
@@ -93,8 +95,8 @@ body {
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
-  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.4);
+  background: linear-gradient(135deg, #f44336, #EC407A);
+  box-shadow: 0 4px 20px rgba(229, 57, 53, 0.4);
   transform: translateY(-2px);
 }
 
@@ -126,8 +128,8 @@ body {
 
 .input-field:focus {
   outline: none;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+  border-color: #E53935;
+  box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.2);
 }
 
 .input-field::placeholder {
@@ -139,6 +141,7 @@ body {
   from {
     stroke-dashoffset: 0;
   }
+
   to {
     stroke-dashoffset: 283;
   }
@@ -160,20 +163,20 @@ body {
 }
 
 .sidebar-link:hover {
-  background: rgba(14, 165, 233, 0.1);
+  background: rgba(229, 57, 53, 0.1);
   color: #e2e8f0;
 }
 
 .sidebar-link.active {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(14, 165, 233, 0.1));
-  color: #0ea5e9;
-  border-left: 3px solid #0ea5e9;
+  background: linear-gradient(135deg, rgba(229, 57, 53, 0.2), rgba(233, 30, 99, 0.1));
+  color: #E53935;
+  border-left: 3px solid #E53935;
 }
 
 /* Loading spinner */
 .spinner {
-  border: 3px solid rgba(14, 165, 233, 0.2);
-  border-top: 3px solid #0ea5e9;
+  border: 3px solid rgba(229, 57, 53, 0.2);
+  border-top: 3px solid #E53935;
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -181,8 +184,13 @@ body {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Table styles */
@@ -207,7 +215,7 @@ body {
 }
 
 .data-table tr:hover td {
-  background: rgba(14, 165, 233, 0.05);
+  background: rgba(229, 57, 53, 0.05);
 }
 
 /* Modal overlay */
@@ -222,9 +230,9 @@ body {
   z-index: 50;
 }
 
-/* Gradient text */
+/* Gradient text - Money Square brand */
 .gradient-text {
-  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+  background: linear-gradient(135deg, #E53935, #E91E63);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
