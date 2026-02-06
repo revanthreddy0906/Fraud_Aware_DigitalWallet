@@ -24,8 +24,12 @@ import {
     Cell,
 } from 'recharts';
 import { alertsAPI, usersAPI, Alert } from '@/lib/api';
+import TiltedTexturedCard from '@/components/TiltedTexturedCard';
+import CountUp from '@/components/CountUp';
 
 interface AlertStats {
+    // ... existing interface ...
+    // (I will use TargetContent/ReplacementContent carefully)
     total_alerts: number;
     by_type: Record<string, number>;
     by_severity: Record<string, number>;
@@ -187,45 +191,53 @@ export default function RiskAnalysisPage() {
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="glass-card p-5">
+                <TiltedTexturedCard className="p-5" spotlightColor="rgba(255, 255, 255, 0.2)">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-xl bg-warning/20 flex items-center justify-center">
                             <AlertTriangle className="w-5 h-5 text-warning" />
                         </div>
                         <span className="text-dark-400 text-sm">Total Alerts</span>
                     </div>
-                    <p className="text-2xl font-bold text-white">{stats?.total_alerts || 0}</p>
-                </div>
+                    <p className="text-2xl font-bold text-white">
+                        <CountUp to={stats?.total_alerts || 0} decimals={0} />
+                    </p>
+                </TiltedTexturedCard>
 
-                <div className="glass-card p-5">
+                <TiltedTexturedCard className="p-5" spotlightColor="rgba(255, 255, 255, 0.2)">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-xl bg-danger/20 flex items-center justify-center">
                             <XCircle className="w-5 h-5 text-danger" />
                         </div>
                         <span className="text-dark-400 text-sm">Unresolved</span>
                     </div>
-                    <p className="text-2xl font-bold text-white">{stats?.unresolved || 0}</p>
-                </div>
+                    <p className="text-2xl font-bold text-white">
+                        <CountUp to={stats?.unresolved || 0} decimals={0} />
+                    </p>
+                </TiltedTexturedCard>
 
-                <div className="glass-card p-5">
+                <TiltedTexturedCard className="p-5" spotlightColor="rgba(255, 255, 255, 0.2)">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-xl bg-success/20 flex items-center justify-center">
                             <CheckCircle className="w-5 h-5 text-success" />
                         </div>
                         <span className="text-dark-400 text-sm">Resolved</span>
                     </div>
-                    <p className="text-2xl font-bold text-white">{stats?.resolved || 0}</p>
-                </div>
+                    <p className="text-2xl font-bold text-white">
+                        <CountUp to={stats?.resolved || 0} decimals={0} />
+                    </p>
+                </TiltedTexturedCard>
 
-                <div className="glass-card p-5">
+                <TiltedTexturedCard className="p-5" spotlightColor="rgba(255, 255, 255, 0.2)">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-xl bg-primary-500/20 flex items-center justify-center">
                             <Activity className="w-5 h-5 text-primary-400" />
                         </div>
                         <span className="text-dark-400 text-sm">Resolution Rate</span>
                     </div>
-                    <p className="text-2xl font-bold text-white">{stats?.resolution_rate || 0}%</p>
-                </div>
+                    <p className="text-2xl font-bold text-white">
+                        <CountUp to={stats?.resolution_rate || 0} decimals={0} />%
+                    </p>
+                </TiltedTexturedCard>
             </div>
 
             {/* Charts and Behavior */}
@@ -324,18 +336,20 @@ export default function RiskAnalysisPage() {
                         <div className="p-4 rounded-xl bg-dark-900/50 border border-dark-700">
                             <p className="text-dark-400 text-sm mb-1">Avg Transaction</p>
                             <p className="text-xl font-bold text-white">
-                                ${baseline.avg_transaction_amount.toFixed(0)}
+                                $<CountUp to={baseline.avg_transaction_amount} decimals={0} />
                             </p>
                         </div>
                         <div className="p-4 rounded-xl bg-dark-900/50 border border-dark-700">
                             <p className="text-dark-400 text-sm mb-1">Max Historical</p>
                             <p className="text-xl font-bold text-white">
-                                ${baseline.max_historical_amount.toFixed(0)}
+                                $<CountUp to={baseline.max_historical_amount} decimals={0} />
                             </p>
                         </div>
                         <div className="p-4 rounded-xl bg-dark-900/50 border border-dark-700">
                             <p className="text-dark-400 text-sm mb-1">Daily Transactions</p>
-                            <p className="text-xl font-bold text-white">{baseline.typical_txn_count_daily}</p>
+                            <p className="text-xl font-bold text-white">
+                                <CountUp to={baseline.typical_txn_count_daily} decimals={0} />
+                            </p>
                         </div>
                         <div className="p-4 rounded-xl bg-dark-900/50 border border-dark-700">
                             <p className="text-dark-400 text-sm mb-1">Active Hours</p>
@@ -345,7 +359,9 @@ export default function RiskAnalysisPage() {
                         </div>
                         <div className="p-4 rounded-xl bg-dark-900/50 border border-dark-700">
                             <p className="text-dark-400 text-sm mb-1">Total Analyzed</p>
-                            <p className="text-xl font-bold text-white">{baseline.transaction_count}</p>
+                            <p className="text-xl font-bold text-white">
+                                <CountUp to={baseline.transaction_count} decimals={0} />
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -428,8 +444,8 @@ export default function RiskAnalysisPage() {
                             <div
                                 key={alert.alert_id}
                                 className={`flex items-center justify-between p-4 rounded-xl border ${alert.resolved
-                                        ? 'bg-dark-900/30 border-dark-700 opacity-60'
-                                        : 'bg-dark-900/50 border-dark-600'
+                                    ? 'bg-dark-900/30 border-dark-700 opacity-60'
+                                    : 'bg-dark-900/50 border-dark-600'
                                     }`}
                             >
                                 <div className="flex items-center gap-4">
