@@ -32,15 +32,15 @@ A high-performance digital wallet application with an integrated **AI-powered Fr
 ```mermaid
 graph TD
     A[User Initiates Transaction] -->|POST /send| B(Fraud Engine Analysis)
-    B --> C{Risk Score & Rules}
-    C -->|Score < 60 (Low/Medium)| D[Approve Transaction]
-    C -->|Score >= 60 (High Risk)| E[Trigger Warning Popup]
+    B --> C{Risk Score and Rules}
+    C -->|Score < 60 Low/Medium| D[Approve Transaction]
+    C -->|Score >= 60 High Risk| E[Trigger Warning Popup]
     C -->|Critical Violation| F[Auto-Freeze Wallet]
     
     E --> G{User Action}
     G -->|Confirm Identity| D
     G -->|Cancel| H[Cancel Transaction]
-    G -->|Timeout (60s)| I[Freeze Wallet]
+    G -->|Timeout 60s| I[Freeze Wallet]
     
     D --> J[Update Balance & Log DB]
     F --> K[Block Transaction & Notify User]
