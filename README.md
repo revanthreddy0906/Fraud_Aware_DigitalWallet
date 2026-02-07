@@ -1,69 +1,105 @@
-# 🛡️ Fraud-Aware Digital Wallet
+# Fraud Aware Digital Wallet
 
-A full-stack digital wallet application with real-time fraud detection, behavior-based risk analysis, and automatic security controls.
+![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Python](https://img.shields.io/badge/python-3.9+-blue.svg) ![Next.js](https://img.shields.io/badge/next.js-13+-black.svg) ![FastAPI](https://img.shields.io/badge/FastAPI-0.95+-green.svg)
 
-![Next.js](https://img.shields.io/badge/Next.js-16.1-black?logo=next.js)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.128-009688?logo=fastapi)
-![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript&logoColor=white)
+A high-performance digital wallet application with an integrated **AI-powered Fraud Detection Engine**. This system analyzes transactions in real-time using behavior baselines, velocity checks, and geolocation data to prevent fraudulent activities.
 
-## ✨ Features
+## 🚀 Key Features
 
-### 🔐 Security & Fraud Detection
-- **7-Rule Fraud Engine**: Detects suspicious transactions based on:
-  - Amount limits (exceeds user's max or 3x average)
-  - Time restrictions (outside allowed hours)
-  - Device fingerprinting (new/unknown devices)
-  - Location tracking (new geographic locations)
-  - Velocity checks (too many transactions in 10 min)
-  - Impossible travel detection
-- **60-Second Confirmation**: High-risk transactions require user confirmation
-- **Auto-Freeze**: Wallet automatically freezes on timeout/suspicious activity
-- **Behavior Baseline**: Learns user spending patterns over time
+-   **Real-time Fraud Scoring**: Evaluates every transaction against multiple risk factors instantly.
+-   **Dynamic Velocity Checks**:
+    -   **Soft Limit**: Triggers a warning popup requiring manual confirmation (e.g., >3 transactions/10 min).
+    -   **Hard Limit**: Automatically freezes the wallet to prevent damage (e.g., >5 transactions/5 min).
+-   **Geolocation Security**: Detects "Impossible Travel" (e.g., transactions from New York and London within 1 hour) and flags them as Critical.
+-   **Behavioral Analysis**: Flags amounts significantly higher than user's average spending.
+-   **Next.js Dashboard**: A premium, responsive UI with real-time alerts, spending charts, and risk analysis.
+-   **Secure Backend**: FastAPI with SQLAlchemy and MySQL, featuring robust error handling and transaction management.
 
-### 💳 Wallet Features
-- Send money with real-time fraud analysis
-- Balance management with freeze/unfreeze controls
-- Transaction history with filters and search
-- CSV/JSON export for statements
-- Risk timeline visualization
+---
 
-### 📊 Dashboard
-- Modern dark-themed UI with glassmorphism
-- Real-time alerts and notifications
-- Risk analysis charts (severity distribution, alert types)
-- Security settings management
-- Device and location management
+## 🛠️ Technology Stack
 
-## 🛠️ Tech Stack
+-   **Frontend**: Next.js 13 (App Router), TypeScript, Tailwind CSS, Recharts, Lucide Icons.
+-   **Backend**: Python, FastAPI, SQLAlchemy, Pydantic.
+-   **Database**: MySQL (via PyMySQL).
+-   **Authentication**: JWT (JSON Web Tokens).
 
-| Layer | Technology |
-|-------|------------|
-| **Frontend** | Next.js 16, TypeScript, Tailwind CSS, Recharts |
-| **Backend** | FastAPI, SQLAlchemy, PyMySQL |
-| **Database** | MySQL 8.0 |
-| **Auth** | JWT (python-jose), bcrypt |
+---
 
-## 🚀 Quick Start
+## 📊 System Architecture
+
+### Transaction Flow
+```mermaid
+graph TD
+    A[User Initiates Transaction] -->|POST /send| B(Fraud Engine Analysis)
+    B --> C{Risk Score & Rules}
+    C -->|Score < 60 (Low/Medium)| D[Approve Transaction]
+    C -->|Score >= 60 (High Risk)| E[Trigger Warning Popup]
+    C -->|Critical Violation| F[Auto-Freeze Wallet]
+    
+    E --> G{User Action}
+    G -->|Confirm Identity| D
+    G -->|Cancel| H[Cancel Transaction]
+    G -->|Timeout (60s)| I[Freeze Wallet]
+    
+    D --> J[Update Balance & Log DB]
+    F --> K[Block Transaction & Notify User]
+```
+
+### Fraud Detection Logic (Velocity Check)
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    participant DB
+    
+    User->>API: Send Money (Txn #4)
+    API->>DB: Count txns in last 10 mins (Completed + Pending)
+    DB-->>API: Count = 3
+    
+    alt Count >= Hard Limit (5)
+        API->>User: 403 Forbidden (Wallet Frozen)
+    else Count >= Soft Limit (3)
+        API->>User: 200 OK (Requires Confirmation)
+        User->>API: Box Popup Appears
+    else Count < Limit
+        API->>User: 200 OK (Success)
+    end
+```
+
+---
+
+## 🛡️ Fraud Rules & Scoring
+
+The engine assigns risk points based on the following violations. A total score > 60 triggers a **High Risk** alert.
+
+| Rule | Risk Points | Consequence |
+| :--- | :--- | :--- |
+| **High Velocity** | **85** | **Confirmation Required** (Soft Limit) |
+| **Exceeds User Limit** | **80** | **Confirmation Required** |
+| **Impossible Travel** | **90** | **Critical Alert** |
+| High Amount (>3x Avg) | 40 | Alert (Medium) |
+| New Device | 25 | Alert (Low/Medium) |
+| New Location | 25 | Alert (Low/Medium) |
+| Unusual Time | 20 | Alert (Low) |
+
+---
+
+## ⚡ Setup Instructions
 
 ### Prerequisites
-- Python 3.11+
-- Node.js 18+
-- MySQL 8.0+
+-   Node.js 16+
+-   Python 3.9+
+-   MySQL Database
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/revanthreddy0906/Fraud_Aware_DigitalWallet.git
-cd Fraud_Aware_DigitalWallet
+### 1. Database Setup
+Ensure your MySQL server is running and create a database named `fraud_wallet`.
+```sql
+CREATE DATABASE fraud_wallet;
 ```
 
-### 2. Set Up Database
-```bash
-mysql -u root -p < backend/database/schema.sql
-mysql -u root -p < backend/database/seed_data.sql
-```
-
-### 3. Configure Backend
+### 2. Backend Setup
+Navigate to the `backend` directory:
 ```bash
 cd backend
 python -m venv venv
@@ -71,105 +107,64 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Update `backend/config.py` with your MySQL credentials:
-```python
-DB_PASSWORD: str = "your_mysql_password"
+Create a `.env` file in `backend/` based on `config.py` (or check `settings` class):
+```env
+DATABASE_URL=mysql+pymysql://user:password@localhost/fraud_wallet
+SECRET_KEY=your_secret_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
-### 4. Start Backend
+Run the server:
 ```bash
-cd backend
-source venv/bin/activate
-python -m uvicorn main:app --reload
+uvicorn main:app --reload
 ```
-API will be available at http://localhost:8000
+*Server running at http://localhost:8000*
 
-### 5. Start Frontend
+### 3. Frontend Setup
+Navigate to the `frontend` directory:
 ```bash
 cd frontend
 npm install
+```
+
+Run the development server:
+```bash
 npm run dev
 ```
-App will be available at http://localhost:3000
-
-## 🔑 Demo Credentials
-
-| Username | Password |
-|----------|----------|
-| `demo_user` | `password123` |
-| `john_doe` | `password123` |
-| `jane_smith` | `password123` |
-
-## 📁 Project Structure
-
-```
-Fraud_Aware_DigitalWallet/
-├── backend/
-│   ├── database/          # SQL schema and seed data
-│   ├── models/            # SQLAlchemy ORM models
-│   ├── routers/           # API endpoints
-│   ├── services/          # Fraud detection engine
-│   ├── config.py          # App configuration
-│   └── main.py            # FastAPI entry point
-│
-└── frontend/
-    └── src/
-        ├── app/
-        │   ├── dashboard/     # Dashboard pages
-        │   │   ├── balance/
-        │   │   ├── profile/
-        │   │   ├── risk-analysis/
-        │   │   ├── statement/
-        │   │   └── transactions/
-        │   └── page.tsx       # Login page
-        └── lib/
-            └── api.ts         # API client
-```
-
-## 🔒 API Endpoints
-
-### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/login` | User login |
-| POST | `/auth/register` | User registration |
-| GET | `/auth/me` | Get current user |
-
-### Transactions
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/transactions/send` | Send money (with fraud check) |
-| POST | `/transactions/confirm` | Confirm high-risk transaction |
-| GET | `/transactions/history` | Get transaction history |
-| GET | `/transactions/balance` | Get current balance |
-
-### Alerts
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/alerts` | Get all alerts |
-| POST | `/alerts/freeze-wallet` | Manually freeze wallet |
-| POST | `/alerts/unfreeze-wallet` | Unfreeze wallet |
-| GET | `/alerts/behavior-baseline` | Get spending patterns |
-
-## 🧪 Testing Fraud Detection
-
-1. **Login** with `demo_user` / `password123`
-2. **Go to "Send Money"**
-3. **Trigger high-risk transaction**:
-   - Enter amount > $10,000 (exceeds limit)
-   - Select new location like "Tokyo, Japan"
-   - A confirmation modal with 60-second countdown appears
-4. **Don't confirm** → Wallet auto-freezes
-5. **Check Risk Analysis** → View triggered alerts
-
-## 📄 License
-
-MIT License - feel free to use this project for learning and development.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+*App running at http://localhost:3000*
 
 ---
 
-Built with ❤️ by [Revanth Reddy](https://github.com/revanthreddy0906)
+## 🔍 API Reference
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/transactions/send` | Initiate a transaction. Runs fraud checks. |
+| `POST` | `/transactions/confirm` | Confirm a flagged high-risk transaction. |
+| `POST` | `/transactions/timeout/{id}` | Freeze wallet if user fails to confirm in time. |
+| `GET` | `/alerts/unresolved` | Fetch active security alerts. |
+| `GET` | `/transactions/risk-timeline` | Get risk history for dashboard charts. |
+
+---
+
+## 📱 User Interface Guide
+
+1.  **Dashboard**: Overview of balance, spending, and blocked threats.
+2.  **Send Money**: Enter amount and recipient.
+    -   *Safe Txn*: Completes instantly.
+    -   *Risky Txn*: Shows a "High Risk Transaction" modal with a 60s countdown.
+3.  **Risk Analysis**: charts showing anomaly scores and recent alerts.
+    -   **Refresh Button**: Use the clock icon to fetch the latest alerts instantly.
+4.  **Profile**: Configure spending limits and safe hours.
+
+---
+
+## 🔒 Security Notes
+-   **JWT Tokens** are used for all authenticated requests.
+-   **CORS** is configured to allow only the frontend origin.
+-   **SQL Injection Protection** is handled by SQLAlchemy ORM.
+-   **Input Validation** is enforced by Pydantic schemas.
+
+---
+© 2026 Fraud Aware Digital Wallet. All Rights Reserved.
