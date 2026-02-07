@@ -21,13 +21,13 @@ class FraudDetectionEngine:
     
     # Risk point assignments for each rule
     RISK_POINTS = {
-        "high_amount": 30,
-        "exceeds_max": 40,
+        "high_amount": 40,
+        "exceeds_max": 80,       # Strict: Triggers High Risk (Confirmation)
         "unusual_time": 20,
         "new_device": 25,
         "new_location": 25,
-        "high_velocity": 35,
-        "impossible_travel": 50,
+        "high_velocity": 85,     # Strict: Triggers High Risk (Confirmation)
+        "impossible_travel": 90, # Critical
     }
     
     def __init__(self, db: Session):
@@ -143,10 +143,11 @@ class FraudDetectionEngine:
         # High-risk transactions require confirmation
         requires_confirmation = risk_level == "high"
         
-        # Auto-freeze if:
-        # 1. Velocity limit exceeded (already calculated)
-        # 2. Anomaly score is very high (>= 80)
-        high_score_freeze = total_score >= 80
+        # Auto-freeze ONLY for Velocity Hard Limit (5 in 5 mins)
+        # High Score (>= 80) should trigger WARNING POPUP, not auto-freeze.
+        # User confirmed: "if he confirms it then the transaction should procced"
+        
+        high_score_freeze = False # Was total_score >= 80
         should_auto_freeze = should_auto_freeze or high_score_freeze
         
         return {
@@ -162,39 +163,37 @@ class FraudDetectionEngine:
     
     def _check_velocity(self, user_id: int, max_txns: int, timestamp: datetime, last_freeze_until: datetime = None) -> Tuple[int, bool, int]:
         """
-        Check transaction velocity in the last 10 minutes.
+        Check transaction velocity in the last 5 minutes.
         
-        Only skips transactions before freeze_until if the freeze has ALREADY EXPIRED
-        (i.e., freeze_until is in the past). This prevents counting old transactions
-        that triggered the previous freeze.
-        
-        Returns:
-            Tuple of (risk_score, should_auto_freeze, transaction_count)
+        Hard Limit: 5 transactions in 5 mins -> Auto Freeze (No popup)
+        Soft Limit: max_txns (user defined) -> Warning (Popup)
         """
-        ten_minutes_ago = timestamp - timedelta(minutes=10)
+        five_minutes_ago = timestamp - timedelta(minutes=5)
         
-        # Only use freeze_until as cutoff if:
-        # 1. freeze_until is set
-        # 2. freeze_until is in the PAST (freeze has expired)
-        # 3. freeze_until is more recent than 10 mins ago
-        check_from = ten_minutes_ago
-        if last_freeze_until and last_freeze_until <= timestamp and last_freeze_until > ten_minutes_ago:
+        # Only use freeze_until as cutoff if relevant
+        check_from = five_minutes_ago
+        if last_freeze_until and last_freeze_until <= timestamp and last_freeze_until > five_minutes_ago:
             check_from = last_freeze_until
         
         recent_count = self.db.query(func.count(Transaction.txn_id)).filter(
             Transaction.user_id == user_id,
             Transaction.timestamp >= check_from,
-            Transaction.status == 'completed'  # Only count completed, not blocked/pending
+            Transaction.status.in_(['completed', 'pending']) # Include pending!
         ).scalar()
         
-        # Auto-freeze when exceeding limit
-        should_auto_freeze = recent_count >= max_txns
+        # Hard Limit: 5 transactions in 5 mins -> Auto Freeze
+        # User defined max_txns is the "Soft Limit" for warning
         
-        if recent_count >= max_txns:
-            return (self.RISK_POINTS["high_velocity"], should_auto_freeze, recent_count)
-        elif recent_count >= max_txns - 1:
-            return (self.RISK_POINTS["high_velocity"] // 2, False, recent_count)
+        hard_limit = 5
+        should_auto_freeze = recent_count >= hard_limit
         
+        # If exceeding Hard Limit or Soft Limit, assign risk points
+        if recent_count >= hard_limit:
+            return (self.RISK_POINTS["high_velocity"] * 2, True, recent_count)
+        elif recent_count >= max_txns:
+            # Soft limit reached - Warning but no auto-freeze yet
+            return (self.RISK_POINTS["high_velocity"], False, recent_count)
+            
         return (0, False, recent_count)
     
     def _check_impossible_travel(

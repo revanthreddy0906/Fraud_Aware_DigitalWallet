@@ -152,8 +152,8 @@ export default function ProfilePage() {
             {message && (
                 <div
                     className={`p-4 rounded-xl flex items-center gap-3 ${message.type === 'success'
-                            ? 'bg-success/10 border border-success/30 text-success'
-                            : 'bg-danger/10 border border-danger/30 text-danger'
+                        ? 'bg-success/10 border border-success/30 text-success'
+                        : 'bg-danger/10 border border-danger/30 text-danger'
                         }`}
                 >
                     {message.type === 'success' ? (
@@ -285,7 +285,7 @@ export default function ProfilePage() {
                     <div>
                         <label className="block text-sm font-medium text-dark-300 mb-2">
                             <Activity className="w-4 h-4 inline mr-2" />
-                            Max Transactions per 10 Minutes
+                            Max Consecutive Transactions
                         </label>
                         <input
                             type="number"
@@ -293,10 +293,10 @@ export default function ProfilePage() {
                             onChange={(e) => setMaxTxns(parseInt(e.target.value))}
                             className="input-field"
                             min="1"
-                            max="20"
+                            max="5"
                         />
                         <p className="text-xs text-dark-500 mt-1">
-                            High transaction velocity will trigger velocity check
+                            Transactions exceeding this trigger a warning. (Max 5 allowed before auto-freeze)
                         </p>
                     </div>
                 </div>

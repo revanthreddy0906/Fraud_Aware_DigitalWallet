@@ -174,15 +174,25 @@ export default function RiskAnalysisPage() {
                         Monitor alerts, view risk patterns, and manage security settings
                     </p>
                 </div>
-                {unresolvedCount > 0 && (
+                <div className="flex gap-3">
                     <button
-                        onClick={handleResolveAll}
-                        className="px-4 py-2 rounded-xl bg-success/20 text-success border border-success/30 hover:bg-success/30 transition-colors flex items-center gap-2"
+                        onClick={fetchData}
+                        disabled={loading}
+                        className="p-2 rounded-xl bg-dark-800 text-dark-300 hover:bg-dark-700 hover:text-white transition-colors"
+                        title="Refresh Data"
                     >
-                        <CheckCircle className="w-4 h-4" />
-                        Resolve All ({unresolvedCount})
+                        <Clock className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                     </button>
-                )}
+                    {unresolvedCount > 0 && (
+                        <button
+                            onClick={handleResolveAll}
+                            className="px-4 py-2 rounded-xl bg-success/20 text-success border border-success/30 hover:bg-success/30 transition-colors flex items-center gap-2"
+                        >
+                            <CheckCircle className="w-4 h-4" />
+                            Resolve All ({unresolvedCount})
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Stats Overview */}

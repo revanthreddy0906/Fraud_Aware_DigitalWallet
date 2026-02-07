@@ -89,6 +89,13 @@ async def send_money(
             # Keep freeze_until! Used by velocity check to reset count
             current_user.wallet_status = 'active'
     
+    # Check max amount to prevent DB overflow (DECIMAL(15,2))
+    if transaction.amount > 9999999999999:  # ~10 Trillion
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Transaction amount too large (Max: 9,999,999,999,999.99)"
+        )
+
     # Check balance
     if Decimal(str(transaction.amount)) > current_user.balance:
         raise HTTPException(
@@ -106,19 +113,63 @@ async def send_money(
         timestamp=datetime.now()
     )
     
-    # Handle velocity limit warning - require confirmation instead of immediate freeze
-    # Handle auto-freeze warning (Velocity OR High Score)
+    # Handle auto-freeze (Hard Limit or Critical Risk)
     if fraud_result.get("should_auto_freeze"):
         velocity_count = fraud_result.get("velocity_count", 0)
         high_score_freeze = fraud_result.get("high_score_freeze", False)
         freeze_minutes = current_user.freeze_duration_minutes or 30
         
-        # Create pending transaction that requires confirmation
-        risk_factors = fraud_result["risk_factors"]
-        if "velocity_limit" not in risk_factors and not high_score_freeze:
-             # Add velocity limit if it was the cause but not yet in factors
-             risk_factors.append("velocity_limit")
-             
+        # Hard Freeze: Freeze wallet IMMEDIATELY
+        current_user.wallet_status = 'frozen'
+        current_user.freeze_until = datetime.now() + timedelta(minutes=freeze_minutes)
+        
+        # Create BLOCKED transaction
+        blocked_txn = Transaction(
+            user_id=current_user.user_id,
+            amount=Decimal(str(transaction.amount)),
+            transaction_type='debit',
+            recipient=transaction.recipient,
+            description=transaction.description or f"Payment to {transaction.recipient}",
+            device_id=transaction.device_id,
+            location=transaction.location,
+            anomaly_score=fraud_result["anomaly_score"],
+            risk_level="critical", 
+            risk_factors=fraud_result["risk_factors"],
+            status='blocked',
+            requires_confirmation=False
+        )
+        db.add(blocked_txn)
+        db.commit()
+        db.refresh(blocked_txn)
+        
+        # Create Alert
+        if high_score_freeze:
+            alert_msg = f"CRITICAL: Transaction anomaly score {fraud_result['anomaly_score']}/100. Wallet auto-frozen."
+            alert_type = 'auto_freeze'
+        else:
+            alert_msg = f"CRITICAL: Velocity Hard Limit Reached ({velocity_count} txns in 5 mins). Wallet auto-frozen."
+            alert_type = 'high_velocity'
+            
+        alert = Alert(
+            user_id=current_user.user_id,
+            txn_id=blocked_txn.txn_id,
+            alert_type=alert_type,
+            severity='critical',
+            message=alert_msg
+        )
+        db.add(alert)
+        db.commit()
+        
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Wallet frozen due to critical risk! ({alert_msg})"
+        )
+
+    # Handle Warning / Soft Limit (Confirmation Required)
+    if fraud_result.get("requires_confirmation"):
+        velocity_count = fraud_result.get("velocity_count", 0)
+        
+        # Create pending transaction
         pending_txn = Transaction(
             user_id=current_user.user_id,
             amount=Decimal(str(transaction.amount)),
@@ -128,8 +179,8 @@ async def send_money(
             device_id=transaction.device_id,
             location=transaction.location,
             anomaly_score=fraud_result["anomaly_score"],
-            risk_level="high",  # Force high risk
-            risk_factors=risk_factors,
+            risk_level="high",  
+            risk_factors=fraud_result["risk_factors"],
             status='pending',
             requires_confirmation=True
         )
@@ -137,47 +188,21 @@ async def send_money(
         db.commit()
         db.refresh(pending_txn)
         
-        # Create appropriate alert
-        if high_score_freeze:
-            alert_msg = f"High Risk Warning: Transaction anomaly score {fraud_result['anomaly_score']}/100 exceeds safety threshold."
-            alert_type = 'auto_freeze'
-        else:
-            alert_msg = f"Velocity limit warning: {velocity_count} transactions in 10 minutes (limit: {current_user.max_txns_10min})"
-            alert_type = 'high_velocity'
-            
-        warning_alert = Alert(
-            user_id=current_user.user_id,
-            txn_id=pending_txn.txn_id,
-            alert_type=alert_type,
-            severity='critical',
-            message=alert_msg
-        )
-        db.add(warning_alert)
-        db.commit()
-        
         # Prepare response
-        response_data = {
+        return {
             "transaction": pending_txn.to_dict(),
             "fraud_analysis": {
                 **fraud_result,
                 "requires_confirmation": True,
-                "freeze_warning": True,  # Generic flag
-                "velocity_warning": not high_score_freeze, # Specific flag
-                "high_score_warning": high_score_freeze,   # Specific flag
-                "velocity_count": velocity_count,
-                "max_allowed": current_user.max_txns_10min,
-                "freeze_minutes": freeze_minutes
-            }
+                "freeze_warning": False, # No longer warning about freeze on confirm
+                "velocity_warning": "high_velocity" in (fraud_result["risk_factors"] or []),
+                "high_score_warning": fraud_result["anomaly_score"] >= 80,
+                "max_allowed": current_user.max_txns_10min or 5
+            },
+            "message": "⚠️ High Risk / Velocity Warning. Please confirm this transaction."
         }
-        
-        if high_score_freeze:
-             response_data["message"] = f"⚠️ High Risk Transaction! Anomaly score {fraud_result['anomaly_score']}/100. Proceeding will freeze your wallet for {freeze_minutes} minutes."
-        else:
-             response_data["message"] = f"⚠️ Velocity limit reached! You've made {velocity_count} transactions in 10 minutes. Proceeding will freeze your wallet for {freeze_minutes} minutes."
-             
-        return response_data
     
-    # Create transaction record
+    # Create transaction record (Normal)
     new_txn = Transaction(
         user_id=current_user.user_id,
         amount=Decimal(str(transaction.amount)),
@@ -189,20 +214,18 @@ async def send_money(
         anomaly_score=fraud_result["anomaly_score"],
         risk_level=fraud_result["risk_level"],
         risk_factors=fraud_result["risk_factors"],
-        status='pending' if fraud_result["requires_confirmation"] else 'completed',
-        requires_confirmation=fraud_result["requires_confirmation"]
+        status='completed',
+        requires_confirmation=False
     )
     
     db.add(new_txn)
     
-    # If transaction doesn't require confirmation, process immediately
-    if not fraud_result["requires_confirmation"]:
-        current_user.balance -= Decimal(str(transaction.amount))
-        new_txn.status = 'completed'
-        
-        # Update behavior baseline
-        baseline_service = BehaviorBaselineService(db)
-        baseline_service.update_after_transaction(current_user.user_id, transaction.amount)
+    # Process balance deduction
+    current_user.balance -= Decimal(str(transaction.amount))
+    
+    # Update behavior baseline
+    baseline_service = BehaviorBaselineService(db)
+    baseline_service.update_after_transaction(current_user.user_id, transaction.amount)
     
     db.commit()
     db.refresh(new_txn)
@@ -219,8 +242,7 @@ async def send_money(
     return {
         "transaction": new_txn.to_dict(),
         "fraud_analysis": fraud_result,
-        "message": "Transaction requires confirmation" if fraud_result["requires_confirmation"] 
-                   else "Transaction completed successfully"
+        "message": "Transaction completed successfully"
     }
 
 
@@ -232,18 +254,28 @@ async def confirm_transaction(
 ):
     """
     Confirm or cancel a pending high-risk transaction.
-    If not confirmed within timeout, wallet will be frozen.
+    If confirmed, transaction proceeds WITHOUT freezing (User authorized it).
     """
-    txn = db.query(Transaction).filter(
-        Transaction.txn_id == confirmation.txn_id,
-        Transaction.user_id == current_user.user_id,
-        Transaction.status == 'pending'
-    ).first()
+    # Debugging "Pending transaction not found"
+    # First find by ID only
+    txn = db.query(Transaction).filter(Transaction.txn_id == confirmation.txn_id).first()
     
     if not txn:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Pending transaction not found"
+            detail=f"Transaction {confirmation.txn_id} not found"
+        )
+        
+    if txn.user_id != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not own this transaction"
+        )
+        
+    if txn.status != 'pending':
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Transaction is already {txn.status}"
         )
     
     if confirmation.confirmed:
@@ -260,47 +292,40 @@ async def confirm_transaction(
         txn.status = 'completed'
         txn.confirmed_at = datetime.now()
         
-        # Check if this was a velocity limit transaction - freeze wallet after confirming
-        is_velocity_limit = 'velocity_limit' in (txn.risk_factors or [])
-        if is_velocity_limit:
-            freeze_minutes = current_user.freeze_duration_minutes or 30
-            current_user.wallet_status = 'frozen'
-            current_user.freeze_until = datetime.now() + timedelta(minutes=freeze_minutes)
-            
-            # Create auto-freeze alert
-            auto_freeze_alert = Alert(
-                user_id=current_user.user_id,
-                txn_id=txn.txn_id,
-                alert_type='auto_freeze',
-                severity='critical',
-                message=f"Wallet auto-frozen after velocity limit confirmation. Frozen for {freeze_minutes} minutes."
-            )
-            db.add(auto_freeze_alert)
-        
         # Update behavior baseline
         baseline_service = BehaviorBaselineService(db)
         baseline_service.update_after_transaction(current_user.user_id, float(txn.amount))
         
         db.commit()
         
-        response = {
+        return {
             "message": "Transaction confirmed and completed",
             "transaction": txn.to_dict()
         }
-        
-        if is_velocity_limit:
-            response["wallet_frozen"] = True
-            response["freeze_until"] = current_user.freeze_until.isoformat()
-            response["message"] = f"Transaction completed. Wallet frozen for {freeze_minutes} minutes due to velocity limit."
-        
-        return response
     else:
-        # Cancel transaction
+        # User REJECTED transaction (Clicked Cancel)
+        # As per user clarification: "if he's available to check the alert... clicking cancel... account is not frozen"
+        # Only TIMEOUT freezes the account.
+        
         txn.status = 'cancelled'
         db.commit()
+        
+        # Create alert info but don't freeze
+        alert = Alert(
+            user_id=current_user.user_id,
+            txn_id=txn.txn_id,
+            alert_type='manual_freeze',
+            severity='medium',
+            message="User flagged and cancelled high-risk transaction."
+        )
+        db.add(alert)
+        db.commit()
+        db.refresh(txn)
+        
         return {
-            "message": "Transaction cancelled",
-            "transaction": txn.to_dict()
+            "message": "Transaction cancelled successfully. Your wallet remains active.",
+            "transaction": txn.to_dict(),
+            "wallet_frozen": False
         }
 
 
@@ -314,17 +339,27 @@ async def handle_timeout(
     Handle transaction timeout - freeze wallet if no response.
     Called by frontend when 60-second timer expires.
     """
-    txn = db.query(Transaction).filter(
-        Transaction.txn_id == txn_id,
-        Transaction.user_id == current_user.user_id,
-        Transaction.status == 'pending'
-    ).first()
+    txn = db.query(Transaction).filter(Transaction.txn_id == txn_id).first()
     
     if not txn:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Pending transaction not found"
+            detail=f"Transaction {txn_id} not found"
         )
+        
+    if txn.user_id != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not own this transaction"
+        )
+        
+    if txn.status != 'pending':
+        # If already blocked/cancelled/completed, timeout is moot
+        return {
+            "message": f"Transaction was already {txn.status}",
+            "freeze_until": current_user.freeze_until.isoformat() if current_user.freeze_until else None,
+            "transaction": txn.to_dict()
+        }
     
     # Cancel the transaction
     txn.status = 'blocked'

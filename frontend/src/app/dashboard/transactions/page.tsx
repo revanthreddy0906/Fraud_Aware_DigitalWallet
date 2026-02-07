@@ -112,7 +112,19 @@ export default function TransactionsPage() {
                 resetForm();
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Confirmation failed');
+            const errorMessage = err instanceof Error ? err.message : 'Confirmation failed';
+
+            // Fix: If transaction is already cancelled/completed, treat as success (close modal)
+            if (errorMessage.includes('already cancelled') || errorMessage.includes('already completed')) {
+                setShowConfirmModal(false);
+                setTransactionComplete(true);
+                setTransactionMessage(errorMessage);
+                setPendingTransaction(null);
+                if (confirmed) resetForm();
+                return;
+            }
+
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -196,6 +208,7 @@ export default function TransactionsPage() {
                                 className="input-field pl-10"
                                 placeholder="0.00"
                                 min="0.01"
+                                max="9999999999999" // Prevent DB overflow
                                 step="0.01"
                                 required
                             />
@@ -339,6 +352,10 @@ export default function TransactionsPage() {
 
                         <div className="text-center mt-8">
                             <AlertTriangle className="w-16 h-16 text-danger mx-auto mb-4" />
+
+                            {/* Modal Error Display */}
+
+
                             <h3 className="text-2xl font-bold text-white mb-2">
                                 {fraudAnalysis?.velocity_warning ? '⚡ Velocity Limit Warning' :
                                     fraudAnalysis?.high_score_warning ? '🚨 High Risk Warning' :
@@ -347,27 +364,27 @@ export default function TransactionsPage() {
                             {fraudAnalysis?.velocity_warning ? (
                                 <div className="text-dark-400 mb-6">
                                     <p className="text-warning font-medium mb-2">
-                                        You&apos;ve made {fraudAnalysis.velocity_count} transactions in 10 minutes (limit: {fraudAnalysis.max_allowed})
+                                        You&apos;ve made {fraudAnalysis.velocity_count} transactions recently (limit: {fraudAnalysis.max_allowed})
                                     </p>
                                     <p>
-                                        Confirming this transaction will <span className="text-danger font-semibold">freeze your wallet for {fraudAnalysis.freeze_minutes} minutes</span>.
+                                        Please confirm this is you. <span className="text-success font-semibold">Confirming will process the transaction</span>.
                                     </p>
-                                    <p className="mt-2 text-sm">Cancel to keep your wallet active.</p>
+                                    <p className="mt-2 text-sm text-dark-400">Cancelling will stop the transaction (No freeze).</p>
                                 </div>
                             ) : fraudAnalysis?.high_score_warning ? (
                                 <div className="text-dark-400 mb-6">
                                     <p className="text-warning font-medium mb-2">
-                                        This transaction has a critical risk score of {fraudAnalysis.anomaly_score}/100.
+                                        This transaction has a high risk score of {fraudAnalysis.anomaly_score}/100.
                                     </p>
                                     <p>
-                                        Due to the high risk, confirming this transaction will <span className="text-danger font-semibold">freeze your wallet for {fraudAnalysis.freeze_minutes} minutes</span> for security review.
+                                        <span className="text-success font-semibold">Confirm only if you initiated this</span>.
                                     </p>
-                                    <p className="mt-2 text-sm">Cancel to keep your wallet active.</p>
+                                    <p className="mt-2 text-sm text-dark-400">Cancelling will stop the transaction (No freeze).</p>
                                 </div>
                             ) : (
                                 <p className="text-dark-400 mb-6">
-                                    This transaction has been flagged. Please confirm within {countdown} seconds or
-                                    your wallet will be temporarily frozen.
+                                    This transaction has been flagged. Please confirm within {countdown} seconds.
+                                    <br /><span className="text-danger text-sm">Timeout will freeze your wallet for security.</span>
                                 </p>
                             )}
                         </div>
