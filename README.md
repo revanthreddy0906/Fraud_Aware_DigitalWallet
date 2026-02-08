@@ -2,6 +2,8 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Python](https://img.shields.io/badge/python-3.9+-blue.svg) ![Next.js](https://img.shields.io/badge/next.js-13+-black.svg) ![FastAPI](https://img.shields.io/badge/FastAPI-0.95+-green.svg)
 
+🔗 **Live Demo**: [https://fraud-aware-digital-wallet.vercel.app](https://fraud-aware-digital-wallet.vercel.app)
+
 A high-performance digital wallet application with an integrated **AI-powered Fraud Detection Engine**. This system analyzes transactions in real-time using behavior baselines, velocity checks, and geolocation data to prevent fraudulent activities.
 
 ## 🚀 Key Features
