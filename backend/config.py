@@ -13,18 +13,32 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
     
-    # Database
+    # Database - Support both local (DB_*) and Railway (MYSQL*) naming
     DB_HOST: str = "localhost"
     DB_PORT: int = 3306
     DB_USER: str = "root"
     DB_PASSWORD: str = "Jayasree@123"
     DB_NAME: str = "fraud_aware_wallet"
     
+    # Railway MySQL variables (auto-populated by Railway)
+    MYSQLHOST: str = ""
+    MYSQLPORT: str = ""
+    MYSQLUSER: str = ""
+    MYSQLPASSWORD: str = ""
+    MYSQLDATABASE: str = ""
+    
     @property
     def DATABASE_URL(self) -> str:
+        # Use Railway variables if available, otherwise use local DB_* variables
+        host = self.MYSQLHOST or self.DB_HOST
+        port = self.MYSQLPORT or str(self.DB_PORT)
+        user = self.MYSQLUSER or self.DB_USER
+        password = self.MYSQLPASSWORD or self.DB_PASSWORD
+        database = self.MYSQLDATABASE or self.DB_NAME
+        
         # URL-encode password to handle special characters like @
-        encoded_password = quote_plus(self.DB_PASSWORD)
-        return f"mysql+pymysql://{self.DB_USER}:{encoded_password}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        encoded_password = quote_plus(password)
+        return f"mysql+pymysql://{user}:{encoded_password}@{host}:{port}/{database}"
     
     # JWT Settings
     JWT_SECRET_KEY: str = "your-super-secret-jwt-key-change-in-production-2024"
